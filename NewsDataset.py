@@ -11,6 +11,7 @@ class NewsDataset(Dataset):
         self.tokenizer = tokenizer
         self.max_len = max_len
     
+        # pre-encode the data
         self.encodings = []
         for text in tqdm(texts, desc = "Tokenising data"):
             self.encodings.append(tokenizer.encode(
@@ -37,6 +38,7 @@ def dynamic_padding_collator(batch, pad_token_id):
     attention_masks = [item['attention_mask'] for item in batch]
     labels = [item['labels'] for item in batch]
     
+    # dynamic padding of batches, according to max_len in batch
     input_ids_padded = pad_sequence(input_ids, batch_first = True, padding_value = pad_token_id)
     attention_masks_padded = pad_sequence(attention_masks, batch_first = True, padding_value = 0)
     

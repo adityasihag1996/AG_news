@@ -37,6 +37,7 @@ def train_one_epoch(model, dataloader, epoch, device, criterion, optimizer):
         loss.backward()
         optimizer.step()
 
+        # cache clearance
         del batch, input_ids, attention_mask, labels, outputs
         torch.cuda.empty_cache()
 

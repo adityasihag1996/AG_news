@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import torch
 
 import config
-from utils import process_dataset, evaluate_model
+from process_utils import process_dataset, evaluate_model
 from NewsDataset import NewsDataset, dynamic_padding_collator
 from modelling_utils import train_one_epoch, get_model_and_tokenizer
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     )
 
     # create dataloaders
-    print("Creating Dataloaders..")
+    print("Creating Train Dataloader..")
     train_loader = DataLoader(
                         train_dataset,
                         batch_size = config.BATCH_SIZE,
@@ -67,12 +67,14 @@ if __name__ == "__main__":
                         collate_fn = partial(dynamic_padding_collator, pad_token_id = tokenizer.pad_token_id),
                         num_workers = config.NUM_WORKERS,
                     )
+    print("Creating Valid Dataloader..")
     val_loader = DataLoader(
                     val_dataset,
                     batch_size = config.BATCH_SIZE,
                     collate_fn = partial(dynamic_padding_collator, pad_token_id = tokenizer.pad_token_id),
                     num_workers = config.NUM_WORKERS,
                 )
+    print("Creating Test Dataloader..")
     test_loader = DataLoader(
                     test_dataset,
                     batch_size = config.BATCH_SIZE,
@@ -82,7 +84,7 @@ if __name__ == "__main__":
     
     # init optimiser, scheduler and loss function
     optimizer = torch.optim.Adam(model.parameters(), lr = config.LR, weight_decay = config.WEIGHT_DECAY)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 30, gamma = 0.9)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 30, gamma = 0.75)
     criterion = torch.nn.CrossEntropyLoss()
 
     # training loop
@@ -99,6 +101,8 @@ if __name__ == "__main__":
                     )
         
         print(f"Epoch {epoch + 1}, TRAIN Loss: {total_loss / len(train_loader)}")
+
+        # get validation metrics for cls
         valid_metrics = evaluate_model(model, val_loader, config.DEVICE)
         print("VALID Accuracy -", valid_metrics["accuracy"])
 
@@ -106,4 +110,7 @@ if __name__ == "__main__":
         torch.save(model.state_dict(), f"cls_ckpt_epoch{epoch}.pt")
 
     print("Training finished.")
-    
+
+    # evaluate on test set
+    test_metrics = evaluate_model(model, test_loader, config.DEVICE)
+    print("TEST metrics -", test_metrics)
